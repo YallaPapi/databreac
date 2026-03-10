@@ -1142,7 +1142,7 @@ export default function DarkWebValue() {
                       )}
                       {item.link && (
                         <div style={{ marginTop: 10 }}>
-                          <span style={{
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" style={{
                             fontSize: "clamp(13px, 2.5vw, 15px)",
                             color: item.featured ? "#111" : "#4ade80",
                             background: item.featured ? "#4ade80" : "transparent",
@@ -1153,10 +1153,11 @@ export default function DarkWebValue() {
                             borderBottom: item.featured ? "none" : "1px solid #4ade8044",
                             paddingBottom: item.featured ? undefined : 2,
                             display: "inline-block",
+                            textDecoration: "none",
                           }}
-                            onClick={e => { e.stopPropagation(); track("cta_click", { action: item.action, link: item.linkLabel || item.link }); window.open(item.link, "_blank"); }}>
+                            onClick={() => { track("cta_click", { action: item.action, link: item.linkLabel || item.link }); }}>
                             {item.featured ? (item.linkLabel || "Get started →") : `→ ${item.linkLabel || item.link.replace("https://", "")}`}
-                          </span>
+                          </a>
                         </div>
                       )}
                     </div>
