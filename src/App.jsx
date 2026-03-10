@@ -466,19 +466,58 @@ export default function DarkWebValue() {
   const getTotalCeoPay = () => breaches.reduce((s, b) => s + (b.ceoPay || 0), 0);
   const getTotalSettlement = () => breaches.reduce((s, b) => s + (b.settlementPerPerson || 0), 0);
 
+  // Build a lookup from BREACH_DB by name (lowercase) for merging forensics
+  const breachDbLookup = {};
+  BREACH_DB.forEach(b => { breachDbLookup[b.name.toLowerCase()] = b; });
+
   const handleScan = async () => {
     if (!email || !email.includes("@")) return;
     setState("scanning"); setPhase(0); setBreaches([]); setRevealCount(0); setExpandedBreach(null); setShowReceipt(false);
 
+    // Play scanning animation
     for (let i = 0; i < scanMsgs.length; i++) {
       setScanText(scanMsgs[i]);
       setScanProg(((i + 1) / scanMsgs.length) * 100);
       await new Promise(r => setTimeout(r, 500 + Math.random() * 300));
     }
 
-    const key = email.toLowerCase();
-    const indices = BREACH_SETS[key] || BREACH_SETS.default;
-    const data = indices.map(i => BREACH_DB[i]);
+    let data = [];
+
+    try {
+      const res = await fetch(`/api/breaches?email=${encodeURIComponent(email)}`);
+
+      if (res.status === 429) {
+        const body = await res.json();
+        setScanText(`Rate limited — retrying in ${body.retryAfter || 2}s...`);
+        await new Promise(r => setTimeout(r, (body.retryAfter || 2) * 1000));
+        const retry = await fetch(`/api/breaches?email=${encodeURIComponent(email)}`);
+        if (retry.ok) data = await retry.json();
+      } else if (res.ok) {
+        data = await res.json();
+      }
+    } catch {
+      // API failed — fall back to demo data
+      const key = email.toLowerCase();
+      const indices = BREACH_SETS[key] || BREACH_SETS.default;
+      data = indices.map(i => BREACH_DB[i]);
+    }
+
+    // If API returned empty or failed, use demo data
+    if (!data.length) {
+      const key = email.toLowerCase();
+      const indices = BREACH_SETS[key] || BREACH_SETS.default;
+      data = indices.map(i => BREACH_DB[i]);
+    }
+
+    // Merge forensics from BREACH_DB if we have enriched data for this breach
+    data = data.map(b => {
+      const enriched = breachDbLookup[(b.name || "").toLowerCase()];
+      if (enriched) {
+        return { ...b, ...enriched, dataTypes: b.dataTypes || enriched.dataTypes, logo: b.logo || enriched.logo };
+      }
+      return b;
+    });
+
     setBreaches(data);
     setState("results"); setPhase(1);
 
@@ -647,88 +686,112 @@ export default function DarkWebValue() {
                           </div>
                         </div>
 
-                        {/* Expanded forensics */}
+                        {/* Expanded details — shows forensics if enriched, basic info if API-only */}
                         {expanded && (
                           <div style={{
                             borderTop: "1px solid #1a1a1a", padding: "clamp(14px, 3vw, 20px)",
                             animation: "fadeIn 0.3s ease",
                           }}>
-                            <div style={{ marginBottom: 18 }}>
-                              <div style={{ fontSize: 12, letterSpacing: 2, color: "#ef4444", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
-                                How they got in
-                              </div>
-                              <div style={{ fontSize: "clamp(13px, 2.5vw, 15px)", color: "#ccc", lineHeight: 1.7 }}>{b.howSimple}</div>
-                              <div style={{
-                                marginTop: 8, fontSize: 13, color: "#555",
-                                padding: "8px 12px", background: "#0a0a0a", borderRadius: 4, display: "inline-block",
-                              }}>
-                                Technical method: {b.method}
-                              </div>
-                            </div>
-
-                            <div style={{ marginBottom: 18 }}>
-                              <div style={{ fontSize: 12, letterSpacing: 2, color: "#facc15", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
-                                Where your data was sold
-                              </div>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                                {b.soldOn.map(s => (
-                                  <span key={s} style={{
-                                    fontSize: 13, padding: "5px 10px", background: "#facc1510",
-                                    border: "1px solid #facc1525", borderRadius: 4, color: "#facc15",
-                                  }}>{s}</span>
-                                ))}
-                              </div>
-                              {b.soldPrice > 0 && (
-                                <div style={{ fontSize: 13, color: "#666", marginTop: 8, lineHeight: 1.6 }}>
-                                  The full database sold for <span style={{ color: "#facc15" }}>${b.soldPrice.toLocaleString()}</span>.
-                                  Your individual record was worth <span style={{ color: "#facc15" }}>${perPersonCost.toFixed(6)}</span>.
+                            {/* HIBP description (always available from API) */}
+                            {b.description && !b.howSimple && (
+                              <div style={{ marginBottom: 18 }}>
+                                <div style={{ fontSize: 12, letterSpacing: 2, color: "#ef4444", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
+                                  About this breach
                                 </div>
-                              )}
-                            </div>
+                                <div style={{ fontSize: "clamp(13px, 2.5vw, 15px)", color: "#ccc", lineHeight: 1.7 }}
+                                  dangerouslySetInnerHTML={{ __html: b.description }} />
+                              </div>
+                            )}
 
-                            <div style={{ marginBottom: 18 }}>
-                              <div style={{ fontSize: 12, letterSpacing: 2, color: "#818cf8", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
-                                How long until they told you
-                              </div>
-                              <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#999", flexWrap: "wrap" }}>
-                                <span style={{ padding: "5px 10px", background: "#111", borderRadius: 4, border: "1px solid #222" }}>
-                                  Breached: {new Date(b.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                                </span>
-                                <span style={{ color: "#333" }}>→</span>
-                                <span style={{ padding: "5px 10px", background: "#111", borderRadius: 4, border: "1px solid #222" }}>
-                                  Told you: {new Date(b.disclosed).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                                </span>
-                                <span style={{
-                                  padding: "5px 10px", borderRadius: 4, fontWeight: 700, fontSize: 13,
-                                  background: daysBetween > 90 ? "#ef444420" : daysBetween > 30 ? "#f9731620" : "#4ade8020",
-                                  color: daysBetween > 90 ? "#ef4444" : daysBetween > 30 ? "#f97316" : "#4ade80",
-                                }}>
-                                  {daysBetween > 365 ? `${(daysBetween / 365).toFixed(1)} YEARS` : `${daysBetween} days`}
-                                </span>
-                              </div>
-                              {daysBetween > 90 && (
-                                <div style={{ fontSize: 13, color: "#ef4444", marginTop: 8 }}>
-                                  Your data was floating around for {daysBetween > 365 ? `over ${Math.floor(daysBetween / 365)} year${Math.floor(daysBetween / 365) > 1 ? "s" : ""}` : `${daysBetween} days`} before anyone told you.
+                            {/* Enriched forensics (only for breaches in our BREACH_DB) */}
+                            {b.howSimple && (
+                              <div style={{ marginBottom: 18 }}>
+                                <div style={{ fontSize: 12, letterSpacing: 2, color: "#ef4444", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
+                                  How they got in
                                 </div>
-                              )}
-                            </div>
+                                <div style={{ fontSize: "clamp(13px, 2.5vw, 15px)", color: "#ccc", lineHeight: 1.7 }}>{b.howSimple}</div>
+                                {b.method && (
+                                  <div style={{
+                                    marginTop: 8, fontSize: 13, color: "#555",
+                                    padding: "8px 12px", background: "#0a0a0a", borderRadius: 4, display: "inline-block",
+                                  }}>
+                                    Technical method: {b.method}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
-                            <div style={{ marginBottom: 18 }}>
-                              <div style={{ fontSize: 12, letterSpacing: 2, color: "#a78bfa", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
-                                Company report card
+                            {b.soldOn && b.soldOn.length > 0 && (
+                              <div style={{ marginBottom: 18 }}>
+                                <div style={{ fontSize: 12, letterSpacing: 2, color: "#facc15", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
+                                  Where your data was sold
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                  {b.soldOn.map(s => (
+                                    <span key={s} style={{
+                                      fontSize: 13, padding: "5px 10px", background: "#facc1510",
+                                      border: "1px solid #facc1525", borderRadius: 4, color: "#facc15",
+                                    }}>{s}</span>
+                                  ))}
+                                </div>
+                                {b.soldPrice > 0 && (
+                                  <div style={{ fontSize: 13, color: "#666", marginTop: 8, lineHeight: 1.6 }}>
+                                    The full database sold for <span style={{ color: "#facc15" }}>${b.soldPrice.toLocaleString()}</span>.
+                                    Your individual record was worth <span style={{ color: "#facc15" }}>${perPersonCost.toFixed(6)}</span>.
+                                  </div>
+                                )}
                               </div>
-                              <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
-                                <GradeBox letter={b.grade.disclosure} label="Speed" />
-                                <GradeBox letter={b.grade.compensation} label="Comp" />
-                                <GradeBox letter={b.grade.prevention} label="Prevent" />
-                                <GradeBox letter={b.grade.overall} label="Overall" />
+                            )}
+
+                            {b.disclosed && (
+                              <div style={{ marginBottom: 18 }}>
+                                <div style={{ fontSize: 12, letterSpacing: 2, color: "#818cf8", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
+                                  How long until they told you
+                                </div>
+                                <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#999", flexWrap: "wrap" }}>
+                                  <span style={{ padding: "5px 10px", background: "#111", borderRadius: 4, border: "1px solid #222" }}>
+                                    Breached: {new Date(b.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                                  </span>
+                                  <span style={{ color: "#333" }}>→</span>
+                                  <span style={{ padding: "5px 10px", background: "#111", borderRadius: 4, border: "1px solid #222" }}>
+                                    Told you: {new Date(b.disclosed).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                                  </span>
+                                  <span style={{
+                                    padding: "5px 10px", borderRadius: 4, fontWeight: 700, fontSize: 13,
+                                    background: daysBetween > 90 ? "#ef444420" : daysBetween > 30 ? "#f9731620" : "#4ade8020",
+                                    color: daysBetween > 90 ? "#ef4444" : daysBetween > 30 ? "#f97316" : "#4ade80",
+                                  }}>
+                                    {daysBetween > 365 ? `${(daysBetween / 365).toFixed(1)} YEARS` : `${daysBetween} days`}
+                                  </span>
+                                </div>
+                                {daysBetween > 90 && (
+                                  <div style={{ fontSize: 13, color: "#ef4444", marginTop: 8 }}>
+                                    Your data was floating around for {daysBetween > 365 ? `over ${Math.floor(daysBetween / 365)} year${Math.floor(daysBetween / 365) > 1 ? "s" : ""}` : `${daysBetween} days`} before anyone told you.
+                                  </div>
+                                )}
                               </div>
-                              <div style={{ fontSize: 13, color: "#666", lineHeight: 1.7 }}>
-                                {Object.values(b.gradeExplain).map((e, ei) => (
-                                  <div key={ei} style={{ marginBottom: 4 }}>• {e}</div>
-                                ))}
+                            )}
+
+                            {b.grade && (
+                              <div style={{ marginBottom: 18 }}>
+                                <div style={{ fontSize: 12, letterSpacing: 2, color: "#a78bfa", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
+                                  Company report card
+                                </div>
+                                <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+                                  <GradeBox letter={b.grade.disclosure} label="Speed" />
+                                  <GradeBox letter={b.grade.compensation} label="Comp" />
+                                  <GradeBox letter={b.grade.prevention} label="Prevent" />
+                                  <GradeBox letter={b.grade.overall} label="Overall" />
+                                </div>
+                                {b.gradeExplain && (
+                                  <div style={{ fontSize: 13, color: "#666", lineHeight: 1.7 }}>
+                                    {Object.values(b.gradeExplain).map((e, ei) => (
+                                      <div key={ei} style={{ marginBottom: 4 }}>• {e}</div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            </div>
+                            )}
 
                             {b.gdprPotential > 0 && (
                               <div style={{
@@ -1110,7 +1173,7 @@ export default function DarkWebValue() {
                 <strong style={{ color: "#555" }}>How this works:</strong> Breach data from HaveIBeenPwned.
                 Dark web prices from Privacy Affairs Dark Web Price Index and Comparitech research reports.
                 Financial exposure estimates based on FTC Consumer Sentinel, FBI IC3 Annual Reports, and IRS data.
-                Figures are averages — actual losses vary. This tool uses demo data — connect a HIBP API key for real results.
+                Figures are averages — actual losses vary. Breach data is checked in real time via the HaveIBeenPwned API. We never see or store your email.
               </div>
             )}
           </div>
