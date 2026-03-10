@@ -763,19 +763,20 @@ export default function DarkWebValue() {
                       padding: "clamp(10px, 2vw, 12px) clamp(12px, 2.5vw, 16px)", background: i % 2 === 0 ? "#111" : "#0d0d0d",
                       borderLeft: `3px solid ${sevColors[info.severity]}`,
                       animation: `slideIn 0.25s ease ${i * 0.03}s both`,
+                      gap: 8, minWidth: 0,
                     }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "clamp(13px, 2.5vw, 15px)" }}>
-                        <span style={{ fontSize: "clamp(16px, 3vw, 20px)" }}>{info.icon}</span>
-                        <span style={{ color: "#ccc" }}>{type}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "clamp(13px, 2.5vw, 15px)", minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: "clamp(16px, 3vw, 20px)", flexShrink: 0 }}>{info.icon}</span>
+                        <span style={{ color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{type}</span>
                         <span style={{
                           fontSize: "clamp(9px, 1.5vw, 11px)", padding: "2px 6px", borderRadius: 3,
                           background: sevColors[info.severity] + "22", color: sevColors[info.severity],
-                          letterSpacing: 1, textTransform: "uppercase", fontWeight: 700,
+                          letterSpacing: 1, textTransform: "uppercase", fontWeight: 700, flexShrink: 0,
                         }}>{info.severity}</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 12, color: "#444" }}>x{info.count}</span>
-                        <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "clamp(12px, 2vw, 14px)", minWidth: 55, textAlign: "right" }}>${info.price.toFixed(2)}</span>
+                        <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "clamp(12px, 2vw, 14px)", minWidth: 50, textAlign: "right" }}>${info.price.toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
@@ -854,7 +855,7 @@ export default function DarkWebValue() {
                           {a.active ? "✓" : "✗"} {a.name}
                         </span>
                         {a.active && a.damageCost && (
-                          <span style={{ fontSize: "clamp(14px, 2.5vw, 17px)", fontWeight: 700, color: "#ef4444", fontFamily: "'Space Grotesk', sans-serif" }}>
+                          <span style={{ fontSize: "clamp(14px, 2.5vw, 17px)", fontWeight: 700, color: "#ef4444", fontFamily: "'Space Grotesk', sans-serif", flexShrink: 0 }}>
                             ${a.damageCost.toLocaleString()}
                           </span>
                         )}
@@ -1158,7 +1159,7 @@ export default function DarkWebValue() {
             <span style={{
               fontSize: "clamp(13px, 2.5vw, 15px)", fontWeight: 700, color: "#111", background: "#4ade80",
               padding: "12px clamp(16px, 3vw, 24px)", borderRadius: 6, cursor: "pointer",
-              whiteSpace: "nowrap", textAlign: "center",
+              whiteSpace: "nowrap", textAlign: "center", flex: "0 0 auto",
             }}
               onClick={() => {
                 const el = document.querySelector('[data-section="protect"]');
