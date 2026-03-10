@@ -543,7 +543,7 @@ export default function DarkWebValue() {
   const darkWebComparison = getDarkWebComparison(darkWebPrice);
 
   // Show sticky CTA bar once big number is revealed
-  const showStickyCta = phase >= 3;
+  const showStickyCta = phase >= 2;
 
   return (
     <div style={{
@@ -816,46 +816,8 @@ export default function DarkWebValue() {
               </Section>
             )}
 
-            {/* ——— SECTION 2: WHAT WAS LEAKED — data types with severity (context before cost) ——— */}
+            {/* ——— SECTION 2: THE BIG NUMBER — potential financial damage ——— */}
             {phase >= 2 && (
-              <Section title={`🏷️ ${getAllTypes().length} types of personal data exposed`} delay={0.1}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  {getAllTypes().map(([type, info], i) => (
-                    <div key={type} style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "clamp(10px, 2vw, 12px) clamp(12px, 2.5vw, 16px)", background: i % 2 === 0 ? "#111" : "#0d0d0d",
-                      borderLeft: `3px solid ${sevColors[info.severity]}`,
-                      animation: `slideIn 0.25s ease ${i * 0.03}s both`,
-                      gap: 8, minWidth: 0,
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "clamp(13px, 2.5vw, 15px)", minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: "clamp(16px, 3vw, 20px)", flexShrink: 0 }}>{info.icon}</span>
-                        <span style={{ color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{type}</span>
-                        <span style={{
-                          fontSize: "clamp(9px, 1.5vw, 11px)", padding: "2px 6px", borderRadius: 3,
-                          background: sevColors[info.severity] + "22", color: sevColors[info.severity],
-                          letterSpacing: 1, textTransform: "uppercase", fontWeight: 700, flexShrink: 0,
-                        }}>{info.severity}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        <span style={{ fontSize: 12, color: "#444" }}>x{info.count}</span>
-                        <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "clamp(12px, 2vw, 14px)", minWidth: 50, textAlign: "right" }}>${info.price.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{
-                  marginTop: 10, padding: "10px 16px", background: "#0d0d0d", borderRadius: 4,
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                }}>
-                  <span style={{ fontSize: 13, color: "#666" }}>Dark web value of your data</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#ef4444", fontFamily: "'Space Grotesk', sans-serif" }}>${darkWebPrice.toFixed(2)}</span>
-                </div>
-              </Section>
-            )}
-
-            {/* ——— SECTION 3: THE BIG NUMBER — potential financial damage (anchored by context above) ——— */}
-            {phase >= 3 && (
               <div style={{
                 background: "linear-gradient(135deg, #1a0000 0%, #0a0a0a 50%, #001a00 100%)",
                 border: "1px solid #222", borderRadius: 8, padding: "clamp(28px, 5vw, 40px) clamp(20px, 4vw, 32px)", marginBottom: 36,
@@ -898,6 +860,44 @@ export default function DarkWebValue() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* ——— SECTION 3: WHAT WAS LEAKED — data types with severity ——— */}
+            {phase >= 3 && (
+              <Section title={`🏷️ ${getAllTypes().length} types of personal data exposed`} delay={0.1}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  {getAllTypes().map(([type, info], i) => (
+                    <div key={type} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "clamp(10px, 2vw, 12px) clamp(12px, 2.5vw, 16px)", background: i % 2 === 0 ? "#111" : "#0d0d0d",
+                      borderLeft: `3px solid ${sevColors[info.severity]}`,
+                      animation: `slideIn 0.25s ease ${i * 0.03}s both`,
+                      gap: 8, minWidth: 0,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "clamp(13px, 2.5vw, 15px)", minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: "clamp(16px, 3vw, 20px)", flexShrink: 0 }}>{info.icon}</span>
+                        <span style={{ color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{type}</span>
+                        <span style={{
+                          fontSize: "clamp(9px, 1.5vw, 11px)", padding: "2px 6px", borderRadius: 3,
+                          background: sevColors[info.severity] + "22", color: sevColors[info.severity],
+                          letterSpacing: 1, textTransform: "uppercase", fontWeight: 700, flexShrink: 0,
+                        }}>{info.severity}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, color: "#444" }}>x{info.count}</span>
+                        <span style={{ color: "#ef4444", fontWeight: 700, fontSize: "clamp(12px, 2vw, 14px)", minWidth: 50, textAlign: "right" }}>${info.price.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{
+                  marginTop: 10, padding: "10px 16px", background: "#0d0d0d", borderRadius: 4,
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <span style={{ fontSize: 13, color: "#666" }}>Dark web value of your data</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#ef4444", fontFamily: "'Space Grotesk', sans-serif" }}>${darkWebPrice.toFixed(2)}</span>
+                </div>
+              </Section>
             )}
 
             {/* ——— SECTION 4: ATTACK BREAKDOWN — decomposes the big number into concrete threats ——— */}
@@ -1239,6 +1239,8 @@ export default function DarkWebValue() {
         * { box-sizing: border-box; }
         body { margin: 0; }
         input::placeholder { color: #555; font-size: clamp(14px, 2.5vw, 16px); }
+        a, a:visited { color: #4ade80; }
+        a:hover { color: #86efac; }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
