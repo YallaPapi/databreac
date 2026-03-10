@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { track } from "@vercel/analytics";
 
 // Dark web pricing - Privacy Affairs Dark Web Price Index + Comparitech research
 const PRICES = {
@@ -473,6 +474,7 @@ export default function DarkWebValue() {
   const handleScan = async () => {
     if (!email || !email.includes("@")) return;
     setState("scanning"); setPhase(0); setBreaches([]); setRevealCount(0); setExpandedBreach(null); setShowReceipt(false);
+    track("scan_started");
 
     // Play scanning animation
     for (let i = 0; i < scanMsgs.length; i++) {
@@ -520,6 +522,7 @@ export default function DarkWebValue() {
 
     setBreaches(data);
     setState("results"); setPhase(1);
+    track("scan_complete", { breaches: data.length, exposure: getTotalDamage() });
 
     for (let i = 0; i <= data.length; i++) {
       await new Promise(r => setTimeout(r, 450));
@@ -1151,7 +1154,7 @@ export default function DarkWebValue() {
                             paddingBottom: item.featured ? undefined : 2,
                             display: "inline-block",
                           }}
-                            onClick={e => { e.stopPropagation(); window.open(item.link, "_blank"); }}>
+                            onClick={e => { e.stopPropagation(); track("cta_click", { action: item.action, link: item.linkLabel || item.link }); window.open(item.link, "_blank"); }}>
                             {item.featured ? (item.linkLabel || "Get started →") : `→ ${item.linkLabel || item.link.replace("https://", "")}`}
                           </span>
                         </div>
@@ -1225,6 +1228,7 @@ export default function DarkWebValue() {
               whiteSpace: "nowrap", textAlign: "center", flex: "0 0 auto",
             }}
               onClick={() => {
+                track("sticky_cta_click");
                 const el = document.querySelector('[data-section="protect"]');
                 if (el) el.scrollIntoView({ behavior: "smooth" });
               }}>
